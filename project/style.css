@@ -1,0 +1,79 @@
+/* style.css - Modern premium styling for project report */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+/* Global */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: #1a237e;
+  margin-top: 1.5rem;
+}
+
+h1 {font-size: 2.4rem;}
+h2 {font-size: 2rem;}
+h3 {font-size: 1.6rem;}
+
+hr {border: none; height: 2px; background: linear-gradient(to right, transparent, #90caf9, transparent); margin: 2rem 0;}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.5rem 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+th {
+  background: #90caf9;
+  color: #fff;
+  font-weight: 600;
+}
+tr:nth-child(even) {background: #f1f8ff;}
+
+/* Images */
+img {
+  max-width: 100%;
+  border-radius: 8px;
+  transition: transform 0.3s ease;
+}
+img:hover {transform: scale(1.02);}
+
+/* Paragraphs */
+p {margin: 0.8rem 0;}
+
+/* Code blocks */
+pre {
+  background: #263238;
+  color: #eceff1;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* Links */
+a {
+  color: #1976d2;
+  text-decoration: none;
+}
+a:hover {text-decoration: underline;}
+
+/* Footer */
+footer {
+  text-align: center;
+  padding: 1rem 0;
+  font-size: 0.9rem;
+  color: #555;
+}

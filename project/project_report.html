@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Project Report: ML-Based CPU Scheduling Optimizer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Academic Project Report: ML-Based CPU Scheduling Optimizer</h1>
+<hr>
+<h2>1. Methodology</h2>
+<p>The primary objective of this project is to implement a hybrid framework that leverages machine learning to predict the optimal CPU scheduling algorithm for a given workload. Instead of running expensive computations across multiple algorithms, the ML model predicts the best algorithm based on summary statistics of the process workload.</p>
+<p>The methodology is divided into four distinct stages: workload generation, feature extraction, model selection/training, and execution.</p>
+<h3>A. System Architecture</h3>
+<p>The overall flow of the predictive scheduler is shown in Figure 1:</p>
+<div class="mermaid">
+graph TD
+    subgraph Workload Input Stage
+        Input["Workload Input<br>(Number of Processes, Burst/Arrival Times, Priorities)"]
+    end
+    
+    subgraph Feature Extraction Stage
+        Features["Feature Extraction<br>(avg_bt, var_bt, avg_at, avg_pr, time_quantum)"]
+    end
+    
+    subgraph Prediction Stage
+        Predictor["ML Classifier Predictor<br>(MLP Classifier, Random Forest, etc.)"]
+        Model["Trained Model Archive<br>(cpu_scheduler_model.pkl)"]
+        Model -.-> Predictor
+    end
+    
+    subgraph Execution Stage
+        AlgoSelection{"Select Predicted Algo"}
+        FCFS["FCFS (First-Come, First-Served)"]
+        SJF_P["SJF_P (Shortest Job First - Preemptive)"]
+        SJF_NP["SJF_NP (Shortest Job First - Non-Preemptive)"]
+        PRIO_NP["PRIO_NP (Priority - Non-Preemptive)"]
+        RR["RR (Round Robin)"]
+    end
+    
+    subgraph Output Stage
+        Simulator["C++ Simulation Engine<br>(main.exe)"]
+        Output["Execution Results & ASCII Gantt Chart"]
+    end
+    
+    Input --> Features
+    Features --> Predictor
+    Predictor --> AlgoSelection
+    AlgoSelection -->|FCFS| FCFS
+    AlgoSelection -->|SJF_P| SJF_P
+    AlgoSelection -->|SJF_NP| SJF_NP
+    AlgoSelection -->|PRIO_NP| PRIO_NP
+    AlgoSelection -->|RR| RR
+    
+    FCFS & SJF_P & SJF_NP & PRIO_NP & RR --> Simulator
+    Simulator --> Output
+</div>
+<p><em>Figure 1: Flowchart illustrating the workload generation, feature extraction, ML classification, and execution pipeline.</em></p>
+<hr>
+<h3>B. Workspace Design &amp; Components</h3>
+<ol>
+<li><strong>Low-Level Simulation (C++ Engine)</strong>: A high-performance C++ simulator (scd/main.cpp) compiles into <code>main.exe</code> and handles the precise scheduling simulations of 5 different scheduling algorithms:
+<ul>
+<li>FCFS (First-Come, First-Served)</li>
+<li>SJF_NP (Shortest Job First - Non-Preemptive)</li>
+<li>SJF_P (Shortest Job First - Preemptive / SRTF)</li>
+<li>PRIO_NP (Priority-Based - Non-Preemptive)</li>
+<li>RR (Round Robin)</li>
+</ul>
+</li>
+<li><strong>Automated Dataset Generation (<code>dataset/generate_dataset.py</code>)</strong>: Generates synthetic workloads with:
+<ul>
+<li>Number of processes ($n$) in range $[4, 12]$</li>
+<li>Burst times ($BT$) in range $[1, 25]$</li>
+<li>Arrival times ($AT$) in range $[0, 20]$</li>
+<li>Priorities ($PR$) in range $[1, 10]$</li>
+<li>Time quantum ($TQ$) in range $[1, 4]$</li>
+</ul>
+For each workload, the script runs the C++ simulator with all 5 algorithms, parses the average waiting time ($AWT$), selects the algorithm with the lowest average waiting time, and labels it as the <code>best_algo</code>.
+</li>
+<li><strong>Machine Learning Classifier Pipeline (<code>ml/train_model.py</code>)</strong>: Loads the dataset, splits the features and target labels into train/test sets, trains 21 different classifiers, and picks the most accurate model.
+</li>
+</ol>
+<hr>
+<h3>C. Feature Engineering</h3>
+<p>To train the machine learning models, summary statistics are extracted from each generated process workload. These statistics serve as the 6 model features:</p>
+<table>
+<tr><th>Feature Name</th><th>Description</th><th>Mathematical Expression / Type</th></tr>
+<tr><td><code>n_proc</code></td><td>Total number of processes in the workload</td><td>Integer ($n \in [4, 12]$)</td></tr>
+<tr><td><code>avg_bt</code></td><td>Mean burst time of all processes</td><td>$\mu_{BT} = \frac{1}{n}\sum_{i=1}^{n} BT_i$</td></tr>
+<tr><td><code>var_bt</code></td><td>Variance of burst times (represents workload heterogeneity)</td><td>$\sigma^2_{BT} = \frac{1}{n}\sum_{i=1}^{n} (BT_i - \mu_{BT})^2$</td></tr>
+<tr><td><code>avg_at</code></td><td>Mean arrival time of processes</td><td>$\mu_{AT} = \frac{1}{n}\sum_{i=1}^{n} AT_i$</td></tr>
+<tr><td><code>avg_pr</code></td><td>Mean priority value of the workload</td><td>$\mu_{PR} = \frac{1}{n}\sum_{i=1}^{n} PR_i$</td></tr>
+<tr><td><code>time_quantum</code></td><td>Time quantum configured for the Round Robin algorithm</td><td>Integer ($TQ \in [1, 4]$)</td></tr>
+</table>
+<hr>
+<h2>2. Experimental Results</h2>
+<p>Experiments were conducted on a dataset containing <strong>5,000</strong> randomly generated process workloads. We evaluate the characteristics of the dataset and compare the performance of 21 machine learning classifiers.</p>
+<h3>A. Dataset Distribution Analysis</h3>
+<table>
+<tr><th>Best Scheduling Algorithm (Class)</th><th>Workloads Won</th><th>Percentage Representation (%)</th></tr>
+<tr><td><strong>SJF_P</strong> (Preemptive SJF / SRTF)</td><td>1,683</td><td>84.15%</td></tr>
+<tr><td><strong>SJF_NP</strong> (Non-Preemptive SJF)</td><td>209</td><td>10.45%</td></tr>
+<tr><td><strong>RR</strong> (Round Robin)</td><td>83</td><td>4.15%</td></tr>
+<tr><td><strong>PRIO_NP</strong> (Non-Preemptive Priority)</td><td>19</td><td>0.95%</td></tr>
+<tr><td><strong>FCFS</strong> (First-Come, First-Served)</td><td>6</td><td>0.30%</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>5,000</strong></td><td><strong>100.00%</strong></td></tr>
+</table>
+<p><em>Analysis</em>: Preemptive Shortest Job First (<code>SJF_P</code>) is mathematically provably optimal for minimizing average waiting times on single processors, explaining its dominance (84.15%).</p>
+<h3>B. Machine Learning Model Comparison</h3>
+<p>The 5,000 workloads were split into <strong>80% training</strong> and <strong>20% testing</strong> sets. 21 models were trained and compared.</p>
+<table>
+<tr><th>Rank</th><th>Machine Learning Model</th><th>Accuracy (%)</th></tr>
+<tr><td>1</td><td><strong>MLP Classifier (Neural Network)</strong></td><td><strong>83.50%</strong></td></tr>
+<tr><td>2</td><td>Gaussian Naive Bayes</td><td>83.25%</td></tr>
+<tr><td>3</td><td>Random Forest</td><td>83.00%</td></tr>
+<tr><td>4</td><td>Extra Trees</td><td>83.00%</td></tr>
+<tr><td>5</td><td>AdaBoost</td><td>83.00%</td></tr>
+<tr><td>6</td><td>Logistic Regression</td><td>83.00%</td></tr>
+<tr><td>7</td><td>Perceptron</td><td>83.00%</td></tr>
+<tr><td>8</td><td>Linear Discriminant Analysis (LDA)</td><td>83.00%</td></tr>
+<tr><td>9</td><td>Support Vector Classifier (SVC RBF)</td><td>82.75%</td></tr>
+<tr><td>10</td><td>Ridge Classifier</td><td>82.75%</td></tr>
+<tr><td>11</td><td>Bernoulli Naive Bayes</td><td>82.75%</td></tr>
+<tr><td>12</td><td>Linear Support Vector Classifier</td><td>82.50%</td></tr>
+<tr><td>13</td><td>Gradient Boosting Classifier</td><td>82.00%</td></tr>
+<tr><td>14</td><td>Multinomial Naive Bayes</td><td>81.00%</td></tr>
+<tr><td>15</td><td>K-Nearest Neighbors (KNN)</td><td>80.50%</td></tr>
+<tr><td>16</td><td>Bagging Classifier</td><td>80.50%</td></tr>
+<tr><td>17</td><td>Hist Gradient Boosting Classifier</td><td>80.00%</td></tr>
+<tr><td>18</td><td>Passive Aggressive Classifier</td><td>77.25%</td></tr>
+<tr><td>19</td><td>Extra Tree (Single)</td><td>72.00%</td></tr>
+<tr><td>20</td><td>Decision Tree</td><td>69.50%</td></tr>
+<tr><td>21</td><td>SGD Classifier</td><td>69.25%</td></tr>
+</table>
+<p><img src="C:/Users/HP/.gemini/antigravity-ide/brain/32650ce2-b077-4c88-8ace-dfae4fbfd98e/accuracy_comparison.png" alt="Model Accuracy Comparison" style="max-width:100%; height:auto;"/></p>
+<p><em>Figure 2: Horizontal bar chart comparing the accuracy of the 21 machine learning classifiers on the test set.</em></p>
+<p><strong>Discussion</strong>: The <code>MLP Classifier</code> achieved the highest performance with <strong>83.50% accuracy</strong>, closely followed by Gaussian Naive Bayes (83.25%). The clustering of scores around 83% reflects the underlying class skew towards the optimal <code>SJF_P</code> scheduling algorithm.</p>
+<hr>
+</body>
+</html>
